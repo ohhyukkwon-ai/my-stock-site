@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Dec 21 17:02:58 2025
+
+@author: ohkwon
+"""
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Signal AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+<body class="container" style="padding-top: 50px;">
+    <hgroup>
+        <h1>📈 주식 사? 말아?</h1>
+        <h2>금융 전문가의 로직으로 분석합니다 (현재 테스트 모드)</h2>
+    </hgroup>
+    
+    <form method="post" action="/analyze">
+        <input type="text" name="ticker" placeholder="종목코드 입력 (예: AAPL)" required>
+        <button type="submit">지금 분석하기</button>
+    </form>
+
+    {% if result %}
+    <article style="text-align: center;">
+        <header>검색 결과: <strong>{{ ticker }}</strong></header>
+        <h2 style="color: {{ result.color }}">{{ result.action }}</h2>
+        <p>{{ result.msg }}</p>
+    </article>
+    {% endif %}
+</body>
+</html>
