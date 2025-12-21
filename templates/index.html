@@ -2,26 +2,46 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Stock Signal AI</title>
+    <title>Finance Expert AI</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .score-bar { width: 100%; background: #eee; border-radius: 10px; height: 20px; margin: 10px 0; }
+        .score-fill { height: 100%; border-radius: 10px; transition: width 1s; }
+    </style>
 </head>
 <body class="container" style="padding-top: 50px;">
-    <hgroup>
-        <h1>📈 주식 사? 말아?</h1>
-        <h2>금융 전문가의 로직으로 분석합니다 (현재 테스트 모드)</h2>
-    </hgroup>
+    <header style="text-align: center;">
+        <h1>💰 퀀트 전문가의 족집게 분석</h1>
+        <p>미국 주식 티커를 입력하면 실시간 데이터를 분석합니다.</p>
+    </header>
     
     <form method="post" action="/analyze">
-        <input type="text" name="ticker" placeholder="종목코드 입력 (예: AAPL)" required>
-        <button type="submit">지금 분석하기</button>
+        <input type="text" name="ticker" placeholder="예: AAPL, TSLA, NVDA" required>
+        <button type="submit" class="contrast">분석 시작</button>
     </form>
 
     {% if result %}
-    <article style="text-align: center;">
-        <header>검색 결과: <strong>{{ ticker }}</strong></header>
-        <h2 style="color: {{ result.color }}">{{ result.action }}</h2>
-        <p>{{ result.msg }}</p>
+    <article>
+        <header><strong>{{ ticker }}</strong> 분석 결과</header>
+        <div style="display: flex; justify-content: space-between;">
+            <h3>현재가: ${{ result.price }}</h3>
+            <h3 style="color: {{ 'red' if result.change < 0 else 'green' }}">
+                {{ result.change }}%
+            </h3>
+        </div>
+        
+        <label>투자 매력도: {{ result.score }}점</label>
+        <div class="score-bar">
+            <div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div>
+        </div>
+
+        <h2 style="color: {{ result.color }}; text-align: center;">{{ result.status }}</h2>
+        <p style="text-align: center; font-style: italic;">"{{ result.msg }}"</p>
     </article>
+    {% else %}
+        {% if ticker %}
+        <p style="color: red;">데이터를 가져올 수 없습니다. 티커를 확인해 주세요.</p>
+        {% endif %}
     {% endif %}
 </body>
 </html>
