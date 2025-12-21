@@ -18,12 +18,12 @@ def get_signal(ticker: str):
 
 # 메인 홈 페이지 (26번째 줄 수정됨)
 @app.get("/")
-async def home(request: request):
+async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "result": None})
 
 # 분석 버튼 클릭 시 로직 (32번째 줄 수정됨)
 @app.post("/analyze")
-async def analyze(request: request, ticker: str = Form(...)):
+async def analyze(request: Request, ticker: str = Form(...)):
     result = get_signal(ticker.upper())
     return templates.TemplateResponse("index.html", {
         "request": request, 
