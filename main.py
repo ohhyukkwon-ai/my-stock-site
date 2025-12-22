@@ -49,11 +49,11 @@ def get_enhanced_analysis(ticker: str):
         return None
 
 @app.get("/")
-async def home(request: request):
+async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "result": None})
 
 @app.post("/analyze")
-async def analyze(request: request, ticker: str = Form(...)):
+async def analyze(request: Request, ticker: str = Form(...)):
     ticker = ticker.upper()
     result = get_enhanced_analysis(ticker)
     return templates.TemplateResponse("index.html", {"request": request, "ticker": ticker, "result": result})
