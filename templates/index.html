@@ -1,47 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Finance Expert AI</title>
+    <title>Quant Strategy Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
-        .score-bar { width: 100%; background: #eee; border-radius: 10px; height: 20px; margin: 10px 0; }
-        .score-fill { height: 100%; border-radius: 10px; transition: width 1s; }
+        :root { --primary: #3498db; }
+        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .stat-card { padding: 1rem; background: #1a212c; border-radius: 8px; text-align: center; border: 1px solid #2d3748; }
+        .score-bar { width: 100%; background: #2d3748; border-radius: 10px; height: 12px; margin: 15px 0; }
+        .score-fill { height: 100%; border-radius: 10px; transition: width 1s ease-in-out; }
     </style>
 </head>
-<body class="container" style="padding-top: 50px;">
-    <header style="text-align: center;">
-        <h1>💰 퀀트 전문가의 족집게 분석</h1>
-        <p>미국 주식 티커를 입력하면 실시간 데이터를 분석합니다.</p>
-    </header>
+<body class="container" style="padding: 40px 0;">
+    <h1 style="text-align: center;">💰 퀀트 전문가의 족집게 분석</h1>
     
     <form method="post" action="/analyze">
-        <input type="text" name="ticker" placeholder="예: AAPL, TSLA, NVDA" required>
-        <button type="submit" class="contrast">분석 시작</button>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" name="ticker" placeholder="미국 주식 티커 입력 (예: NVDA)" required>
+            <button type="submit" class="contrast">분석 실행</button>
+        </div>
     </form>
 
     {% if result %}
     <article>
-        <header><strong>{{ ticker }}</strong> 분석 결과</header>
-        <div style="display: flex; justify-content: space-between;">
-            <h3>현재가: ${{ result.price }}</h3>
-            <h3 style="color: {{ 'red' if result.change < 0 else 'green' }}">
-                {{ result.change }}%
-            </h3>
-        </div>
-        
-        <label>투자 매력도: {{ result.score }}점</label>
-        <div class="score-bar">
-            <div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div>
+        <header>
+            <h2 style="margin: 0;">{{ ticker }} <small>분석 결과</small></h2>
+        </header>
+
+        <div class="grid-stats">
+            <div class="stat-card">
+                <small>현재가</small>
+                <h3>${{ result.price }}</h3>
+                <span style="color: {{ 'red' if result.change < 0 else '#2ecc71' }}">{{ result.change }}%</span>
+            </div>
+            <div class="stat-card">
+                <small>RSI (14일)</small>
+                <h3>{{ result.rsi }}</h3>
+                <small>{{ '과매수' if result.rsi > 70 else '과매도' if result.rsi < 30 else '보통' }}</small>
+            </div>
+            <div class="stat-card">
+                <small>시가총액</small>
+                <h3>${{ result.mcap }}</h3>
+            </div>
+            <div class="stat-card">
+                <small>PER</small>
+                <h3>{{ result.pe }}</h3>
+            </div>
         </div>
 
-        <h2 style="color: {{ result.color }}; text-align: center;">{{ result.status }}</h2>
-        <p style="text-align: center; font-style: italic;">"{{ result.msg }}"</p>
+        <div style="margin-top: 2rem; text-align: center;">
+            <label>종합 투자 매력도: <strong>{{ result.score }}점</strong></label>
+            <div class="score-bar">
+                <div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div>
+            </div>
+            <h1 style="color: {{ result.color }};">{{ result.status }}</h1>
+            <p><em>"{{ result.msg if result.msg else '현 시점 퀀트 알고리즘에 따른 분석 결과입니다.' }}"</em></p>
+        </div>
+
+        <footer>
+            <strong>기업 요약:</strong><br>
+            <small>{{ result.summary }}</small>
+        </footer>
     </article>
-    {% else %}
-        {% if ticker %}
-        <p style="color: red;">데이터를 가져올 수 없습니다. 티커를 확인해 주세요.</p>
-        {% endif %}
     {% endif %}
 </body>
 </html>
