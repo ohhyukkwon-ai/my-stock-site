@@ -37,7 +37,11 @@
             <div class="stat-card">
                 <small>RSI (14일)</small>
                 <h3>{{ result.rsi }}</h3>
-                <small>{{ '과매수' if result.rsi > 70 else '과매도' if result.rsi < 30 else '보통' }}</small>
+                <small>
+                    {{ '과매수' if result.rsi != 'N/A' and result.rsi > 70
+                       else '과매도' if result.rsi != 'N/A' and result.rsi < 30
+                       else '보통' }}
+                </small>
             </div>
             <div class="stat-card">
                 <small>시가총액</small>
@@ -60,7 +64,7 @@
 
         <footer>
             <strong>기업 요약:</strong><br>
-            <small>{{ result.summary }}</small>
+            <small style="white-space: pre-wrap;">{{ result.summary }}</small>
         </footer>
     </article>
     {% endif %}
