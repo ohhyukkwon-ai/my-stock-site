@@ -1,59 +1,59 @@
+import yfinance as yf
+import pandas as pd
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
-import yfinance as yf
-import random
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-def get_expert_logic(ticker: str):
+def get_enhanced_analysis(ticker: str):
     try:
         stock = yf.Ticker(ticker)
-        # 최근 5일간의 데이터를 가져와서 흐름 분석
-        hist = stock.history(period="5d")
-        if hist.empty:
-            return None
-
-        current_price = hist['Close'].iloc[-1]
-        prev_price = hist['Close'].iloc[-2]
-        change_pct = ((current_price - prev_price) / prev_price) * 100
+        # 기술적 지표를 위해 1개월치 데이터 로드
+        hist = stock.history(period="1mo")
+        info = stock.info # 기업 기본 정보
         
-        # 재미 요소: 퀀트 스코어 (0~100점) 계산
-        # 전일 대비 상승했으면 기본 점수 부여 + 랜덤 변동성 추가
-        score = 50 + (change_pct * 10) + random.randint(-5, 5)
+        if hist.empty: return None
+
+        curr = hist['Close'].iloc[-1]
+        prev = hist['Close'].iloc[-2]
+        change_pct = ((curr - prev) / prev) * 100
+
+        # 1. RSI 계산 (간이형)
+        delta = hist['Close'].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs.iloc[-1]))
+
+        # 2. 이동평균선 확인
+        ma5 = hist['Close'].rolling(window=5).mean().iloc[-1]
+        ma20 = hist['Close'].rolling(window=20).mean().iloc[-1]
+        trend = "상승세" if ma5 > ma20 else "하락세"
+
+        # 3. 퀀트 스코어 로직 강화
+        score = 50 + (change_pct * 5) + (10 if rsi < 30 else -10 if rsi > 70 else 0)
         score = max(0, min(100, int(score)))
 
-        # 점수에 따른 전문가 코멘트
-        if score >= 80:
-            status, msg, color = "강력 매수", "차트가 예술이네요. 제 딸에게도 사주고 싶은 종목입니다! 🚀", "#2ecc71"
-        elif score >= 60:
-            status, msg, color = "매수 검토", "흐름이 나쁘지 않아요. 조금씩 담아볼까요? 👍", "#3498db"
-        elif score >= 40:
-            status, msg, color = "관망", "폭풍전야 같네요. 커피 한 잔 마시며 지켜보시죠. ✋", "#f1c40f"
-        else:
-            status, msg, color = "매도/회피", "지금은 소나기를 피할 때입니다. 일단 도망가세요! 📉", "#e74c3c"
-
         return {
-            "price": round(current_price, 2),
+            "price": round(curr, 2),
             "change": round(change_pct, 2),
+            "rsi": round(rsi, 1),
+            "trend": trend,
+            "mcap": f"{info.get('marketCap', 0) / 1e12:.2f}T", # 조 단위 시총
+            "pe": info.get('trailingPE', 'N/A'),
             "score": score,
-            "status": status,
-            "msg": msg,
-            "color": color
+            "summary": info.get('longBusinessSummary', '')[:200] + "..." # 기업 한줄 소개
         }
     except:
         return None
 
 @app.get("/")
-async def home(request: Request):
+async def home(request: request):
     return templates.TemplateResponse("index.html", {"request": request, "result": None})
 
 @app.post("/analyze")
-async def analyze(request: Request, ticker: str = Form(...)):
+async def analyze(request: request, ticker: str = Form(...)):
     ticker = ticker.upper()
-    data = get_expert_logic(ticker)
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
-        "ticker": ticker, 
-        "result": data
-    })
+    result = get_enhanced_analysis(ticker)
+    return templates.TemplateResponse("index.html", {"request": request, "ticker": ticker, "result": result})
