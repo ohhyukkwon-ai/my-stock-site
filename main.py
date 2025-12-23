@@ -26,6 +26,19 @@ templates = Jinja2Templates(directory="templates")
 oa_client = OpenAI()
 
 
+
+@app.get("/debug/yahoo")
+def debug_yahoo():
+    t = yf.Ticker("AAPL")
+    s = t._data.session
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/AAPL"
+    r = s.get(url, timeout=10)
+
+    ct = r.headers.get("content-type", "")
+    preview = (r.text or "")[:200]
+    return {"status": r.status_code, "content_type": ct, "preview": preview}
+
+
 # -----------------------------
 # Utilities
 # -----------------------------
