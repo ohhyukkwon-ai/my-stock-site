@@ -1,6 +1,6 @@
 fastapi
 uvicorn
 gunicorn
-openai
+openai>=1.30.0
 jinja2
 python-multipart

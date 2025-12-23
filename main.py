@@ -15,12 +15,15 @@ VECTOR_STORE_ID = os.environ.get("OPENAI_VECTOR_STORE_ID")
 def verify_vector_store():
     """Vector Store가 정상이고 파일이 포함되어 있는지 검증합니다."""
     try:
+        # 라이브러리 버전이 낮으면 여기서 AttributeError가 발생하므로 
+        # requirements.txt 업데이트가 필수입니다.
         vs = client.beta.vector_stores.retrieve(VECTOR_STORE_ID)
         file_count = vs.file_counts.completed
         print(f"🔍 [검증] Vector Store ID: {VECTOR_STORE_ID} | 연결된 파일 수: {file_count}")
         return file_count > 0
     except Exception as e:
-        print(f"❌ [검증 실패] Vector Store 오류: {e}")
+        # 에러 메시지를 더 구체적으로 찍어서 원인을 파악합니다.
+        print(f"❌ [검증 실패] Vector Store 오류: {str(e)}")
         return False
 
 def get_pro_myeongri_analysis(user_data: dict):
