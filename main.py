@@ -185,66 +185,144 @@ B. 투자 관점 분석(사주 기본 리포트 기반)
 # =========================
 # 핵심 분석 함수
 # =========================
-def get_pro_myeongri_analysis(user_data: dict, prompt_text: str) -> Dict[str, Any]:
+def build_prompt_stage1(user_data: Dict[str, str]) -> str:
+    return f"""
+너는 업로드된 PDF('Bazi.pdf')에서만 정보를 가져온다.
+
+[목표: 발췌 전용]
+아래 사용자 정보에 맞춰, 분석에 필요한 규칙/정의/판단 기준/연도 운세 해석 규칙을
+PDF에서 찾아 "evidence_bank"로 최소 15개 발췌하라.
+
+[사용자 정보]
+- name: {user_data['name']}
+- gender: {user_data['gender']}
+- birth_date: {user_data['birth_date']}
+- birth_time: {user_data['birth_time']}
+
+[출력 규칙]
+- 설명/해석/조언 금지. 오직 발췌만.
+- PDF 문장 그대로 짧게 인용(1~2문장).
+- JSON만 출력.
+
+[JSON 형식]
+{{
+  "input_echo": {{
+    "name": "{user_data['name']}",
+    "gender": "{user_data['gender']}",
+    "birth_date": "{user_data['birth_date']}",
+    "birth_time": "{user_data['birth_time']}"
+  }},
+  "evidence_bank": [
+    {{"tag": "일간/강약", "quote": "…", "source": "Bazi.pdf"}},
+    {{"tag": "용신/희신", "quote": "…", "source": "Bazi.pdf"}},
+    {{"tag": "2026", "quote": "…", "source": "Bazi.pdf"}}
+  ]
+}}
+""".strip()
+
+
+def build_prompt_stage2(user_data: Dict[str, str], evidence_bank_json: str) -> str:
+    return f"""
+너는 업로드된 PDF('Bazi.pdf')에서만 정보를 가져온다.
+아래 evidence_bank에 있는 발췌만 사용해서 최종 분석을 작성하라.
+evidence_bank에 없는 내용은 절대 쓰지 말고, 부족하면 "근거 부족"이라고 명시하라.
+
+[사용자 정보]
+- name: {user_data['name']}
+- gender: {user_data['gender']}
+- birth_date: {user_data['birth_date']}
+- birth_time: {user_data['birth_time']}
+
+[evidence_bank]
+{evidence_bank_json}
+
+[강제 규칙]
+- 최종 JSON의 핵심 주장마다 claim_id를 붙여라.
+- evidence는 최소 12개 이상 제출하고 claim_id에 매핑하라.
+- evidence의 quote는 evidence_bank에서 그대로 가져와라(임의 생성 금지).
+- 출력은 JSON만.
+
+[JSON 형식]
+{{
+  "input_echo": {{
+    "name": "{user_data['name']}",
+    "gender": "{user_data['gender']}",
+    "birth_date": "{user_data['birth_date']}",
+    "birth_time": "{user_data['birth_time']}"
+  }},
+  "saju_overview": "A1..A5 형식으로 주장 나열",
+  "analysis": "B1..B5 형식으로 투자 주장 나열",
+  "year_1": "C1..",
+  "year_2": "D1..",
+  "year_3": "E1..",
+  "evidence": [
+    {{"claim_id":"A1","quote":"…","source":"Bazi.pdf","note":"왜 이 근거가 A1을 지지하는지"}},
+    {{"claim_id":"B2","quote":"…","source":"Bazi.pdf","note":"..."}}
+  ],
+  "status": "한줄",
+  "color": "#3498db"
+}}
+""".strip()
+
+
+def get_pro_myeongri_analysis(user_data: dict) -> Dict[str, Any]:
+    user_data = normalize_user_data(user_data)
+    print("✅ [INPUT user_data] =", user_data)
+
     vs_check = verify_vector_store()
     if not vs_check["ok"]:
         return {
+            "input_echo": user_data,
             "saju_overview": "",
             "analysis": f"PDF 문서를 읽어올 수 없습니다.\n- 사유: {vs_check['reason']}\n- 상세: {vs_check['detail']}",
             "year_1": "",
             "year_2": "",
             "year_3": "",
+            "evidence": [],
             "status": "지식 저장소 연결 실패",
             "color": "#e74c3c",
         }
 
     try:
-        thread = client.beta.threads.create(messages=[{"role": "user", "content": prompt_text}])
+        # 1) 발췌 전용
+        prompt1 = build_prompt_stage1(user_data)
+        t1 = client.beta.threads.create(messages=[{"role": "user", "content": prompt1}])
 
-        # 결과 흔들림 줄이기(지원되면 적용)
         try:
-            run = client.beta.threads.runs.create_and_poll(
-                thread_id=thread.id,
-                assistant_id=ASSISTANT_ID,
-                temperature=0.2,
-            )
+            r1 = client.beta.threads.runs.create_and_poll(thread_id=t1.id, assistant_id=ASSISTANT_ID, temperature=0.0)
         except TypeError:
-            run = client.beta.threads.runs.create_and_poll(
-                thread_id=thread.id,
-                assistant_id=ASSISTANT_ID,
-            )
+            r1 = client.beta.threads.runs.create_and_poll(thread_id=t1.id, assistant_id=ASSISTANT_ID)
 
-        print("RUN_STATUS =", run.status)
-        if getattr(run, "last_error", None):
-            print("RUN_LAST_ERROR =", run.last_error)
+        if r1.status != "completed":
+            return {"input_echo": user_data, "analysis": f"1단계 실패: {r1.status}", "status": "에러", "color": "#e74c3c"}
 
-        if run.status != "completed":
-            err = getattr(run, "last_error", None)
-            return {
-                "saju_overview": "",
-                "analysis": f"분석 실행이 완료되지 않았습니다.\n- run.status={run.status}\n- last_error={err}",
-                "year_1": "",
-                "year_2": "",
-                "year_3": "",
-                "status": "에러",
-                "color": "#e74c3c",
-            }
+        m1 = client.beta.threads.messages.list(thread_id=t1.id)
+        stage1_raw = m1.data[0].content[0].text.value
+        stage1_json = extract_json_from_text(stage1_raw) or {}
+        evidence_bank = stage1_json.get("evidence_bank", [])
+        evidence_bank_json_str = json.dumps({"evidence_bank": evidence_bank}, ensure_ascii=False)
 
-        messages = client.beta.threads.messages.list(thread_id=thread.id)
-        ai_raw = messages.data[0].content[0].text.value
+        # 2) evidence_bank만으로 최종 작성
+        prompt2 = build_prompt_stage2(user_data, evidence_bank_json_str)
+        t2 = client.beta.threads.create(messages=[{"role": "user", "content": prompt2}])
 
+        try:
+            r2 = client.beta.threads.runs.create_and_poll(thread_id=t2.id, assistant_id=ASSISTANT_ID, temperature=0.0)
+        except TypeError:
+            r2 = client.beta.threads.runs.create_and_poll(thread_id=t2.id, assistant_id=ASSISTANT_ID)
+
+        if r2.status != "completed":
+            return {"input_echo": user_data, "analysis": f"2단계 실패: {r2.status}", "status": "에러", "color": "#e74c3c"}
+
+        m2 = client.beta.threads.messages.list(thread_id=t2.id)
+        ai_raw = m2.data[0].content[0].text.value
         parsed = extract_json_from_text(ai_raw)
+
         if parsed and isinstance(parsed, dict):
-            return {
-                "input_echo": parsed.get("input_echo", user_data),
-                "saju_overview": parsed.get("saju_overview", ""),
-                "analysis": parsed.get("analysis", ai_raw),
-                "year_1": parsed.get("year_1", ""),
-                "year_2": parsed.get("year_2", ""),
-                "year_3": parsed.get("year_3", ""),
-                "status": parsed.get("status", "분석 완료"),
-                "color": parsed.get("color", "#3498db"),
-            }
+            # evidence가 너무 적으면 “PDF 사용 부족”으로 판단 가능
+            if len(parsed.get("evidence", [])) < 10:
+                parsed["status"] = (parsed.get("status", "") + " / 근거 부족(발췌 수 부족)").strip()
+            return parsed
 
         return {
             "input_echo": user_data,
@@ -253,6 +331,7 @@ def get_pro_myeongri_analysis(user_data: dict, prompt_text: str) -> Dict[str, An
             "year_1": "",
             "year_2": "",
             "year_3": "",
+            "evidence": [],
             "status": "분석 완료(비정형)",
             "color": "#3498db",
         }
@@ -265,9 +344,11 @@ def get_pro_myeongri_analysis(user_data: dict, prompt_text: str) -> Dict[str, An
             "year_1": "",
             "year_2": "",
             "year_3": "",
+            "evidence": [],
             "status": "에러",
             "color": "#e74c3c",
         }
+
 
 
 # =========================
