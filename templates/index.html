@@ -1,52 +1,93 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>Professional AI 명리 가이드</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
-    <style>
-        .result-card { border-left: 10px solid var(--color); padding: 2rem; background: #1a212c; border-radius: 8px; margin-top: 2rem; }
-        .year-box { background: #2c3e50; padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #3498db; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>명리 기반 3개년 투자 전략</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn { width: 100%; padding: 12px; border-radius: 10px; border: 0; background: #111; color: #fff; cursor: pointer; }
+    .muted { color: #666; font-size: 13px; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #0b0f14; color: #d9e6ff; padding: 14px; border-radius: 12px; overflow: auto; }
+    details summary { cursor: pointer; font-weight: 600; }
+  </style>
 </head>
-<body class="container" style="padding: 40px 0;">
-    <header style="text-align: center; margin-bottom: 2rem;">
-        <h1>☯️ 명리 기반 3개년 투자 전략</h1>
-        <p>PDF 속 전문 지식으로 당신의 투자 흐름을 분석합니다.</p>
-    </header>
+<body>
 
-    <article>
-        <form method="post" action="/analyze">
-            <div class="grid">
-                <input type="text" name="name" placeholder="이름" required>
-                <input type="date" name="birth_date" required>
-            </div>
-            <div class="grid">
-                <input type="text" name="birth_time" placeholder="태어난 시 (예: 14:30)">
-                <select name="gender" required>
-                    <option value="" disabled selected>성별 선택</option>
-                    <option value="남성">남성</option>
-                    <option value="여성">여성</option>
-                </select>
-            </div>
-            <button type="submit" class="contrast">개인 사주 분석 및 투자 방향 제시</button>
-        </form>
-    </article>
+  <h1>☯️ 명리 기반 3개년 투자 전략</h1>
+  <p class="muted">PDF 속 전문 지식으로 당신의 투자 흐름을 분석합니다.</p>
 
-    {% if result %}
-    <article class="result-card" style="--color: {{ result.color or '#3498db' }};">
-        <h2>{{ user.name }}님의 전문 분석 보고서</h2>
-        <div style="background: #242b38; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-            <h4 style="color: #3498db;">[사주 구조 분석]</h4>
-            <p style="margin: 0; line-height: 1.8;">{{ result.analysis }}</p>
+  <div class="card">
+    <form action="/analyze" method="post">
+      <div class="grid">
+        <div>
+          <label>이름</label>
+          <input name="name" value="{{ user.name if user else '' }}" required />
         </div>
+        <div>
+          <label>생년월일 (mm/dd/yyyy)</label>
+          <input name="birth_date" value="{{ user.birth_date if user else '' }}" required />
+        </div>
+        <div>
+          <label>태어난 시 (예: 14:30 / 모름)</label>
+          <input name="birth_time" value="{{ user.birth_time if user else '모름' }}" />
+        </div>
+        <div>
+          <label>성별</label>
+          <select name="gender" required>
+            <option value="" {% if not user %}selected{% endif %}>선택</option>
+            <option value="남" {% if user and user.gender=='남' %}selected{% endif %}>남</option>
+            <option value="여" {% if user and user.gender=='여' %}selected{% endif %}>여</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn" type="submit">개인 사주 분석 및 투자 방향 제시</button>
+      </div>
+    </form>
+  </div>
 
-        <h3 style="color: {{ result.color }}; text-align: center;">투자 성향: {{ result.status }}</h3>
+  {% if result %}
+  <div class="card">
+    <h2 style="margin-top:0;">결과</h2>
+    <p><b>상태:</b> {{ result.status }}</p>
 
-        <div class="year-box"><strong>📅 2026년 전략:</strong> {{ result.year_1 }}</div>
-        <div class="year-box"><strong>📅 2027년 전략:</strong> {{ result.year_2 }}</div>
-        <div class="year-box"><strong>📅 2028년 전략:</strong> {{ result.year_3 }}</div>
-    </article>
+    {% if result.input_echo %}
+      <p class="muted"><b>입력 확인:</b>
+        {{ result.input_echo.birth_date }} /
+        {{ result.input_echo.birth_time }} /
+        {{ result.input_echo.gender }}
+      </p>
     {% endif %}
+
+    {% if result.saju_overview %}
+      <h3>사주 전반</h3>
+      <pre>{{ result.saju_overview }}</pre>
+    {% endif %}
+
+    <h3>투자 분석</h3>
+    <pre>{{ result.analysis }}</pre>
+
+    {% if result.year_1 %}<h3>2026년 전략</h3><pre>{{ result.year_1 }}</pre>{% endif %}
+    {% if result.year_2 %}<h3>2027년 전략</h3><pre>{{ result.year_2 }}</pre>{% endif %}
+    {% if result.year_3 %}<h3>2028년 전략</h3><pre>{{ result.year_3 }}</pre>{% endif %}
+  </div>
+  {% endif %}
+
+  <!-- ✅ 검증용: 웹페이지 맨 아래에 프롬프트 출력 -->
+  <div class="card">
+    <details {% if prompt_text %}open{% endif %}>
+      <summary>🔎 Debug Prompt (모델에 보낸 프롬프트 원문)</summary>
+      {% if prompt_text %}
+        <pre>{{ prompt_text | e }}</pre>
+      {% else %}
+        <p class="muted">아직 분석을 실행하지 않았습니다.</p>
+      {% endif %}
+    </details>
+  </div>
+
 </body>
 </html>
