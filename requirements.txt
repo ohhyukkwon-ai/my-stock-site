@@ -1,9 +1,6 @@
 fastapi
 uvicorn
 gunicorn
-yfinance
 openai
-pandas
-numpy
 jinja2
 python-multipart

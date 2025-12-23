@@ -2,30 +2,55 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI Quant Dashboard</title>
+    <title>AI Quant Strategic Center</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
-        .ai-card { border-left: 8px solid var(--color); padding: 1.5rem; background: #1a212c; border-radius: 8px; margin-top: 2rem; }
+        :root { --primary: #3498db; }
+        .ai-result-card { border-left: 10px solid var(--color); padding: 2rem; background: #1a212c; border-radius: 8px; margin-top: 2rem; }
+        .score-display { font-size: 3.5rem; font-weight: bold; margin: 0; }
+        .score-bar { width: 100%; background: #2d3748; border-radius: 10px; height: 16px; margin: 20px 0; }
+        .score-fill { height: 100%; border-radius: 10px; transition: width 1s ease-in-out; }
+        .ai-commentary { background: #2c3e50; padding: 1.5rem; border-radius: 8px; border: 1px solid #3498db; }
     </style>
 </head>
 <body class="container" style="padding: 50px 0;">
-    <h1>💰 AI 퀀트 전략 센터</h1>
+    <header style="text-align: center; margin-bottom: 3rem;">
+        <h1>🛡️ 전문가 전용 AI 전략 센터</h1>
+        <p>실시간 시세를 배제하고, 독점 투자 전략 문서(PDF) 기반으로만 종목을 정밀 진단합니다.</p>
+    </header>
+
     <form method="post" action="/analyze">
-        <input type="text" name="ticker" placeholder="티커 입력" required>
-        <button type="submit" class="contrast">분석</button>
+        <div style="display: flex; gap: 15px;">
+            <input type="text" name="ticker" placeholder="분석할 미국 주식 티커 입력 (예: AAPL, TSLA)" required>
+            <button type="submit" class="contrast">전략 문서 기반 분석</button>
+        </div>
     </form>
 
     {% if result %}
-    <article class="ai-card" style="--color: {{ result.color }};">
-        <header>
-            <strong>{{ ticker }}</strong>
-            {% if result.price == "N/A" %}
-                <span style="color: gray;">(실시간 시세 로드 지연)</span>
-            {% else %}
-                <span>${{ result.price }} ({{ result.change }}%)</span>
-            {% endif %}
+    <article class="ai-result-card" style="--color: {{ result.color }};">
+        <header style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h2 style="margin: 0;">{{ ticker }} 종목 리서치</h2>
+                <p style="color: {{ result.color }}; font-weight: bold;">{{ result.status }}</p>
+            </div>
+            <div style="text-align: right;">
+                <p class="score-display" style="color: {{ result.color }};">{{ result.score }}</p>
+                <small>전략 매력도 지수</small>
+            </div>
         </header>
-        <p><strong>💡 AI 조언:</strong> {{ result.msg }}</p>
+
+        <div class="score-bar">
+            <div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div>
+        </div>
+
+        <div class="ai-commentary">
+            <h5 style="color: #3498db; margin-bottom: 1rem;">📝 퀀트 전략가 AI의 핵심 조언</h5>
+            <p style="margin: 0; font-size: 1.1rem; line-height: 1.8;">{{ result.msg }}</p>
+        </div>
+        
+        <footer style="margin-top: 1.5rem; text-align: center;">
+            <small>* 본 분석은 업로드된 전략 문서를 기반으로 생성되었으며, 실시간 시세 변동은 포함되지 않았습니다.</small>
+        </footer>
     </article>
     {% endif %}
 </body>
