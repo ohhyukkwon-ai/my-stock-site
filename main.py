@@ -30,13 +30,23 @@ oa_client = OpenAI()
 @app.get("/debug/yahoo")
 def debug_yahoo():
     t = yf.Ticker("AAPL")
-    s = t._data.session
+
+    # yfinance 버전에 따라 session 접근이 달라짐
+    s = getattr(getattr(t, "_data", None), "session", None)
+    if s is None:
+        s = getattr(getattr(t, "_data", None), "_session", None)
+
+    if s is None:
+        return {"error": "yfinance session not found on this version"}
+
     url = "https://query1.finance.yahoo.com/v8/finance/chart/AAPL"
     r = s.get(url, timeout=10)
 
-    ct = r.headers.get("content-type", "")
-    preview = (r.text or "")[:200]
-    return {"status": r.status_code, "content_type": ct, "preview": preview}
+    return {
+        "status": r.status_code,
+        "content_type": r.headers.get("content-type", ""),
+        "preview": (r.text or "")[:200],
+    }
 
 
 # -----------------------------
