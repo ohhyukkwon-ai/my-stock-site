@@ -6,11 +6,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
         .result-card { border-left: 10px solid var(--color); padding: 2rem; background: #1a212c; border-radius: 8px; margin-top: 2rem; }
-        .year-box { background: #2c3e50; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #3498db; }
+        .year-box { background: #2c3e50; padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #3498db; }
     </style>
 </head>
 <body class="container" style="padding: 40px 0;">
-    <header style="text-align: center;">
+    <header style="text-align: center; margin-bottom: 2rem;">
         <h1>☯️ 명리 기반 3개년 투자 전략</h1>
         <p>PDF 속 명리 비책으로 당신의 투자 흐름을 분석합니다.</p>
     </header>
@@ -19,7 +19,7 @@
         <form method="post" action="/analyze">
             <div class="grid">
                 <input type="text" name="name" placeholder="이름" required>
-                <input type="date" name="birth_date" title="생년월일" required>
+                <input type="date" name="birth_date" required>
             </div>
             <div class="grid">
                 <input type="text" name="birth_time" placeholder="태어난 시 (예: 14:30 / 모르면 '모름')">
@@ -29,27 +29,28 @@
                     <option value="여성">여성</option>
                 </select>
             </div>
-            <button type="submit" class="contrast">개인 운명 분석 및 투자 방향 제시</button>
+            <button type="submit" class="contrast">개인 분석 및 투자 방향 제시</button>
         </form>
     </article>
 
     {% if result %}
     <article class="result-card" style="--color: {{ result.color or '#3498db' }};">
-        <h2>{{ user.name }}님의 명리 분석 결과</h2>
-        <blockquote style="font-size: 1.2rem;">
-            <strong>[사주 총평]</strong><br>{{ result.analysis }}
-        </blockquote>
+        <h2>{{ user.name }}님의 분석 결과</h2>
+        <div style="background: #242b38; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+            <h4 style="color: #3498db; margin-bottom: 0.5rem;">[사주 총평]</h4>
+            <p style="margin: 0; font-size: 1.1rem; line-height: 1.7;">{{ result.analysis }}</p>
+        </div>
 
-        <h3 style="color: {{ result.color }}; text-align: center;">종합 투자 성향: {{ result.status }}</h3>
+        <h3 style="color: {{ result.color }}; text-align: center; margin-bottom: 2rem;">종합 투자 성향: {{ result.status }}</h3>
 
         <div class="year-box">
-            <strong>📅 2026년 전략:</strong> {{ result.year_1 }}
+            <strong>📅 2026년 전략:</strong> {{ result.year_1 or '데이터 생성 중...' }}
         </div>
         <div class="year-box">
-            <strong>📅 2027년 전략:</strong> {{ result.year_2 }}
+            <strong>📅 2027년 전략:</strong> {{ result.year_2 or '데이터 생성 중...' }}
         </div>
         <div class="year-box">
-            <strong>📅 2028년 전략:</strong> {{ result.year_3 }}
+            <strong>📅 2028년 전략:</strong> {{ result.year_3 or '데이터 생성 중...' }}
         </div>
     </article>
     {% endif %}
