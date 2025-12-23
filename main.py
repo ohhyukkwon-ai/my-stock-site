@@ -1,104 +1,92 @@
 import os
 import json
 import re
-import time
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from openai import OpenAI
 
-app = FastAPI(title="Myeongri-Investment Strategy Center")
+app = FastAPI(title="Professional Myeongri-Quant Center")
 templates = Jinja2Templates(directory="templates")
 
-# OpenAI 설정 (Render 환경변수에 OPENAI_API_KEY와 OPENAI_VECTOR_STORE_ID가 설정되어야 함)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 VECTOR_STORE_ID = os.environ.get("OPENAI_VECTOR_STORE_ID")
 
-def get_myeongri_analysis(user_data: dict):
-    if not VECTOR_STORE_ID:
-        return {"status": "설정 오류", "analysis": "Vector Store ID를 확인해주세요.", "color": "#95a5a6"}
+def verify_vector_store():
+    """Vector Store가 정상이고 파일이 포함되어 있는지 검증합니다."""
+    try:
+        vs = client.beta.vector_stores.retrieve(VECTOR_STORE_ID)
+        file_count = vs.file_counts.completed
+        print(f"🔍 [검증] Vector Store ID: {VECTOR_STORE_ID} | 연결된 파일 수: {file_count}")
+        return file_count > 0
+    except Exception as e:
+        print(f"❌ [검증 실패] Vector Store 오류: {e}")
+        return False
 
-    # 명리학적 분석을 위한 프롬프트 구성
+def get_pro_myeongri_analysis(user_data: dict):
+    # 1. 연결 검증 실행
+    if not verify_vector_store():
+        return {"status": "연결 오류", "analysis": "PDF 지식 저장소(Vector Store) 연결에 실패했거나 파일이 없습니다.", "color": "#e74c3c"}
+
+    # 2. 명리학 전문 프레임워크를 반영한 프롬프트
     prompt = f"""
-    사용자 정보:
-    - 이름: {user_data['name']}
-    - 생년월일: {user_data['birth_date']}
-    - 태어난 시: {user_data['birth_time']}
-    - 성별: {user_data['gender']}
+    [명리학 전문 분석 지침]
+    사용자 정보: {user_data['name']}, {user_data['gender']}, 생년월일시: {user_data['birth_date']} {user_data['birth_time']}
 
-    요청사항:
-    1. 우리 PDF 문서에 기술된 명리학적 원칙을 바탕으로 이 사용자의 사주 특징을 분석하라.
-    2. 이를 반영하여 향후 3년(2026~2028년) 동안의 투자 방향을 제시하라.
-    3. 반드시 아래 JSON 형식으로만 응답하라(다른 설명 금지):
+    분석 단계:
+    1. 사주팔자 도출: 생년월일시를 바탕으로 만세력을 구성하고 일간(Day Master)을 확정하라.
+    2. PDF 지식 대조: 업로드된 'Bazi.pdf'에서 일간의 특성, 십신(Ten Gods)의 배치, 격국(Structure)론을 찾아내어 이 사주의 '강약'과 '용신(Useful God)'을 판별하라.
+    3. 3개년 투자 로드맵: 2026(병오), 2027(정미), 2028(무신)년의 세운(Annual Luck)과 사용자의 용신/희신 관계를 PDF의 '운세 해석 법칙'에 대입하여 구체적 투자 비중을 산출하라.
+
+    응답 규칙:
+    - PDF에 없는 일반적인 내용은 배제하고, 반드시 문서 내의 특수 해석법을 인용하라.
+    - 출력은 반드시 아래 JSON 형식을 유지하라:
     {{
-        "analysis": "개인 사주 분석 요약 (2줄)",
-        "year_1": "2026년 전략",
-        "year_2": "2027년 전략",
-        "year_3": "2028년 전략",
-        "status": "종합 투자 성향",
-        "color": "색상코드(#2ecc71 등)"
+        "analysis": "일간 및 격국 분석, 용신 판별 결과 (PDF 근거 포함)",
+        "year_1": "2026년: 운세에 따른 자산 배분 전략 및 주의사항",
+        "year_2": "2027년: 운세에 따른 자산 배분 전략 및 주의사항",
+        "year_3": "2028년: 운세에 따른 자산 배분 전략 및 주의사항",
+        "status": "현재 대운/세운 기반 투자 심리 상태",
+        "color": "길흉에 따른 색상(#2ecc71:길, #f1c40f:평범, #e74c3c:흉)"
     }}
     """
 
     try:
-        # 1. 임시 어시스턴트 생성 (file_search 도구 활성화)
+        # 고정된 어시스턴트 대신 매번 최적화된 설정을 주입합니다.
         assistant = client.beta.assistants.create(
-            name="Myeongri Analyst",
-            instructions="너는 업로드된 명리학 PDF 지식을 기반으로 개인의 운세와 투자 전략을 연결하는 전문가다.",
+            name="Pro Myeongri Analyst",
+            instructions="너는 'Bazi.pdf'의 모든 내용을 암기한 명리학 대가다. 문서의 전문 용어를 사용하여 깊이 있는 분석을 제공하라.",
             model="gpt-4o-mini",
             tools=[{"type": "file_search"}],
             tool_resources={"file_search": {"vector_store_ids": [VECTOR_STORE_ID]}}
         )
 
-        # 2. 쓰레드 생성 및 메시지 전달
-        thread = client.beta.threads.create(
-            messages=[{"role": "user", "content": prompt}]
-        )
-
-        # 3. 실행 및 완료 대기
-        run = client.beta.threads.runs.create_and_poll(
-            thread_id=thread.id,
-            assistant_id=assistant.id
-        )
+        thread = client.beta.threads.create(messages=[{"role": "user", "content": prompt}])
+        run = client.beta.threads.runs.create_and_poll(thread_id=thread.id, assistant_id=assistant.id)
 
         if run.status == 'completed':
             messages = client.beta.threads.messages.list(thread_id=thread.id)
             ai_raw = messages.data[0].content[0].text.value
             
-            # JSON 추출 및 파싱 로직 강화
-            result = {"analysis": ai_raw, "status": "분석 완료", "color": "#3498db"} # 기본값
-            try:
-                json_match = re.search(r'\{.*\}', ai_raw, re.DOTALL)
-                if json_match:
-                    result.update(json.loads(json_match.group()))
-            except:
-                pass
+            # JSON 파싱 강화
+            result = {"analysis": "데이터 파싱 중...", "status": "분석 완료", "color": "#3498db"}
+            json_match = re.search(r'\{.*\}', ai_raw, re.DOTALL)
+            if json_match:
+                result.update(json.loads(json_match.group()))
             
             client.beta.assistants.delete(assistant.id)
             return result
-        return {"status": "지연", "analysis": "AI 응답 지연", "color": "#e74c3c"}
+        return {"status": "시간 초과", "analysis": "분석이 너무 깊어 응답이 지연되었습니다.", "color": "#e74c3c"}
 
     except Exception as e:
-        return {"status": "에러", "analysis": str(e), "color": "#e74c3c"}
+        return {"status": "시스템 에러", "analysis": f"오류: {str(e)}", "color": "#e74c3c"}
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "result": None})
 
 @app.post("/analyze", response_class=HTMLResponse)
-async def analyze(
-    request: Request, 
-    name: str = Form(...), 
-    birth_date: str = Form(...), 
-    birth_time: str = Form("모름"),
-    gender: str = Form(...)
-):
-    user_data = {
-        "name": name, "birth_date": birth_date, 
-        "birth_time": birth_time, "gender": gender
-    }
-    # 폼 필드 매핑 확인: ticker 필드 없이 위 4개 데이터로 분석 진행
-    result = get_myeongri_analysis(user_data)
-    return templates.TemplateResponse("index.html", {
-        "request": request, "user": user_data, "result": result
-    })
+async def analyze(request: Request, name: str = Form(...), birth_date: str = Form(...), birth_time: str = Form("모름"), gender: str = Form(...)):
+    user_data = {"name": name, "birth_date": birth_date, "birth_time": birth_time, "gender": gender}
+    result = get_pro_myeongri_analysis(user_data)
+    return templates.TemplateResponse("index.html", {"request": request, "user": user_data, "result": result})
