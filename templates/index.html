@@ -1,68 +1,16 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>AI Quant Strategy Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
-    <style>
-        :root { --primary: #3498db; }
-        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
-        .stat-card { padding: 1rem; background: #1a212c; border-radius: 8px; text-align: center; border: 1px solid #2d3748; }
-        .score-bar { width: 100%; background: #2d3748; border-radius: 10px; height: 12px; margin: 15px 0; }
-        .score-fill { height: 100%; border-radius: 10px; transition: width 1s ease-in-out; }
-        .ai-box { background: #2c3e50; border-left: 5px solid #3498db; padding: 1.5rem; margin-top: 1rem; border-radius: 0 8px 8px 0; }
-    </style>
-</head>
-<body class="container" style="padding: 40px 0;">
-    <h1 style="text-align: center;">🤖 AI 퀀트 전략 어시스턴트</h1>
-    
-    <form method="post" action="/analyze">
-        <div style="display: flex; gap: 10px;">
-            <input type="text" name="ticker" placeholder="미국 주식 티커 (예: NVDA, TSLA)" required>
-            <button type="submit" class="contrast">AI 분석 시작</button>
-        </div>
-    </form>
+<div class="grid-stats">
+    <div class="stat-card">
+        <small>현재가 (Yahoo)</small>
+        {% if result.price == "N/A" %}
+            <h4 style="color: #95a5a6;">로드 실패</h4>
+        {% else %}
+            <h3>${{ result.price }}</h3>
+            <span style="color: {{ 'red' if result.change < 0 else '#2ecc71' }}">{{ result.change }}%</span>
+        {% endif %}
+    </div>
+</div>
 
-    {% if result %}
-    <article>
-        <header>
-            <h2 style="margin: 0;">{{ ticker }} <small>실시간 퀀트 데이터</small></h2>
-        </header>
-
-        <div class="grid-stats">
-            <div class="stat-card">
-                <small>현재가</small>
-                <h3>${{ result.price }}</h3>
-                <span style="color: {{ 'red' if result.change < 0 else '#2ecc71' }}">{{ result.change }}%</span>
-            </div>
-            <div class="stat-card">
-                <small>RSI (14일)</small>
-                <h3>{{ result.rsi }}</h3>
-            </div>
-            <div class="stat-card">
-                <small>PER</small>
-                <h3>{{ result.pe }}</h3>
-            </div>
-        </div>
-
-        <div class="ai-box">
-            <h4 style="color: #3498db; margin-bottom: 0.5rem;">💡 전문가 문서 기반 AI 조언</h4>
-            <p style="margin: 0; line-height: 1.6;">{{ result.msg }}</p>
-        </div>
-
-        <div style="margin-top: 2rem; text-align: center;">
-            <label>종합 매력도: <strong>{{ result.score }}점</strong></label>
-            <div class="score-bar">
-                <div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div>
-            </div>
-            <h2 style="color: {{ result.color }};">{{ result.status }}</h2>
-        </div>
-
-        <footer>
-            <strong>기업 요약:</strong><br>
-            <small>{{ result.summary }}</small>
-        </footer>
-    </article>
-    {% endif %}
-</body>
-</html>
+<div class="ai-box" style="background: #1a212c; border-left: 5px solid #3498db; padding: 1.5rem; margin-top: 1.5rem;">
+    <h5 style="color: #3498db;">💡 전문가 PDF 기반 전략 코멘트</h5>
+    <p>{{ result.msg }}</p>
+</div>
