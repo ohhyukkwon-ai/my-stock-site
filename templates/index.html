@@ -2,35 +2,34 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI Quant Dashboard</title>
+    <title>AI Quant Strategy Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
         .ai-card { border-left: 8px solid var(--color); padding: 1.5rem; background: #1a212c; border-radius: 8px; margin-top: 2rem; }
         .score-bar { width: 100%; background: #2d3748; border-radius: 10px; height: 12px; margin: 15px 0; }
         .score-fill { height: 100%; border-radius: 10px; transition: width 1s ease-in-out; }
-        .data-failed { color: #95a5a6; font-style: italic; }
     </style>
 </head>
 <body class="container" style="padding: 50px 0;">
     <header style="text-align: center; margin-bottom: 2rem;">
         <h1>💰 AI 퀀트 전략 센터</h1>
-        <p>실시간 시세와 PDF 전략 문서를 결합하여 분석합니다.</p>
+        <p>실시간 데이터가 없어도 AI 분석은 계속됩니다.</p>
     </header>
 
     <form method="post" action="/analyze">
         <div style="display: flex; gap: 10px;">
             <input type="text" name="ticker" placeholder="티커 입력 (예: NVDA)" required>
-            <button type="submit" class="contrast">전략 분석 실행</button>
+            <button type="submit" class="contrast">분석 실행</button>
         </div>
     </form>
 
     {% if result %}
     <article class="ai-card" style="--color: {{ result.color }};">
         <header style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0;">{{ ticker }} 결과</h2>
+            <h2 style="margin: 0;">{{ ticker }}</h2>
             <div>
                 {% if result.price == "N/A" %}
-                    <span class="data-failed">실시간 시세 로드 실패</span>
+                    <span style="color: #95a5a6;">야후 시세 로드 실패</span>
                 {% else %}
                     <strong style="font-size: 1.5rem;">${{ result.price }}</strong>
                     <span style="color: {{ 'red' if result.change < 0 else '#2ecc71' }}">({{ result.change }}%)</span>
@@ -38,16 +37,14 @@
             </div>
         </header>
 
-        <div style="margin: 1.5rem 0;">
+        <div style="margin: 1.5rem 0; text-align: center;">
             <label>종합 매력도: {{ result.score }}점</label>
-            <div class="score-bar">
-                <div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div>
-            </div>
-            <h3 style="color: {{ result.color }}; text-align: center;">{{ result.status }}</h3>
+            <div class="score-bar"><div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div></div>
+            <h3 style="color: {{ result.color }};">{{ result.status }}</h3>
         </div>
 
         <div style="background: #2c3e50; padding: 1.2rem; border-radius: 8px;">
-            <h5 style="color: #3498db; margin-bottom: 0.5rem;">💡 전문가 PDF 기반 조언</h5>
+            <h5 style="color: #3498db; margin-bottom: 0.5rem;">💡 전문가 PDF 기반 전략 코멘트</h5>
             <p style="margin: 0; line-height: 1.6;">{{ result.msg }}</p>
         </div>
     </article>
