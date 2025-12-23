@@ -9,21 +9,55 @@ from openai import OpenAI
 app = FastAPI(title="Professional Myeongri-Quant Center")
 templates = Jinja2Templates(directory="templates")
 
+# ⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇
+# ✅ 여기에 넣는다 (전역 초기화 영역)
+VECTOR_STORE_ID = os.environ.get("OPENAI_VECTOR_STORE_ID", "").strip()
+if not VECTOR_STORE_ID:
+    raise RuntimeError("OPENAI_VECTOR_STORE_ID is missing/empty")
+
+api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+if not api_key:
+    raise RuntimeError("OPENAI_API_KEY is missing/empty")
+
+client = OpenAI(api_key=api_key)
+
+print("VECTOR_STORE_ID =", VECTOR_STORE_ID)
+print("API_KEY_PREFIX =", api_key[:10])
+# ⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆
+
 # OpenAI 설정 (Render 환경변수에 반드시 입력되어야 함)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 VECTOR_STORE_ID = os.environ.get("OPENAI_VECTOR_STORE_ID")
 
 def verify_vector_store():
-    """Vector Store 연결 및 파일 포함 여부를 실시간 검증합니다."""
-    try:
-        # openai>=1.30.0 버전 필수
-        vs = client.beta.vector_stores.retrieve(VECTOR_STORE_ID)
-        file_count = vs.file_counts.completed
-        print(f"🔍 [검증] Vector Store ID: {VECTOR_STORE_ID} | 연결된 파일 수: {file_count}")
-        return file_count > 0
-    except Exception as e:
-        print(f"❌ [검증 실패] Vector Store 오류: {str(e)}")
+    if not VECTOR_STORE_ID:
+        print("❌ VECTOR_STORE_ID missing")
         return False
+
+    try:
+        vs = client.beta.vector_stores.retrieve(VECTOR_STORE_ID)
+        fc = vs.file_counts  # completed / in_progress / failed / total 등
+        print(f"🔍 VS={VECTOR_STORE_ID} file_counts={fc}")
+
+        # total이 0이면 진짜로 비어있음
+        if getattr(fc, "total", 0) == 0:
+            return False
+
+        # in_progress가 있으면 "실패"가 아니라 "대기"로 처리하는 게 맞음
+        if getattr(fc, "in_progress", 0) > 0:
+            return True  # 또는 별도 상태로 반환
+
+        # failed가 있으면 콘솔에서 파일 상태 확인 필요
+        if getattr(fc, "failed", 0) > 0:
+            print("⚠️ Some files failed to index")
+            return True  # VS는 살아있음. 다만 파일 문제.
+
+        return getattr(fc, "completed", 0) > 0
+
+    except Exception as e:
+        print(f"❌ Vector Store retrieve error: {repr(e)}")
+        return False
+
 
 def get_pro_myeongri_analysis(user_data: dict):
     # 1. 연결 검증 실행
