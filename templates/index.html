@@ -21,16 +21,22 @@
     </form>
 
     {% if result %}
-    <article class="ai-card" style="--color: {{ result.color }};">
+    <article class="ai-card" style="--color: {{ result.color or '#3498db' }};">
         <h2 style="margin: 0;">{{ ticker }} <small>전략 진단 결과</small></h2>
         <div style="margin: 2rem 0; text-align: center;">
-            <p style="font-size: 3rem; font-weight: bold; color: {{ result.color }}; margin: 0;">{{ result.score }}점</p>
-            <div class="score-bar"><div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div></div>
-            <h3 style="color: {{ result.color }};">{{ result.status }}</h3>
+            <p style="font-size: 3.5rem; font-weight: bold; color: {{ result.color or '#3498db' }}; margin: 0;">
+                {{ result.score if result.score is not none else '50' }}점
+            </p>
+            <div class="score-bar">
+                <div class="score-fill" style="width: {{ result.score or 50 }}%; background: {{ result.color or '#3498db' }};"></div>
+            </div>
+            <h3>{{ result.status or '분석 완료' }}</h3>
         </div>
         <div style="background: #2c3e50; padding: 1.5rem; border-radius: 8px;">
-            <h5 style="color: #3498db;">📝 전문가 PDF 기반 조언</h5>
-            <p style="margin: 0; line-height: 1.7; font-size: 1.1rem;">{{ result.msg }}</p>
+            <h5 style="color: #3498db; margin-bottom: 1rem;">📝 전문가 PDF 기반 조언</h5>
+            <p style="margin: 0; line-height: 1.8; font-size: 1.1rem;">
+                {{ result.msg or '데이터를 불러오는 중입니다. 잠시만 기다려주세요.' }}
+            </p>
         </div>
     </article>
     {% endif %}
