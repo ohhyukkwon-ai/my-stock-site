@@ -11,11 +11,8 @@
     </style>
 </head>
 <body class="container" style="padding: 50px 0;">
-    <header style="text-align: center; margin-bottom: 2rem;">
-        <h1>💰 AI 퀀트 전략 센터</h1>
-        <p>실시간 데이터가 없어도 AI 분석은 계속됩니다.</p>
-    </header>
-
+    <h1 style="text-align: center;">💰 AI 퀀트 전략 센터</h1>
+    
     <form method="post" action="/analyze">
         <div style="display: flex; gap: 10px;">
             <input type="text" name="ticker" placeholder="티커 입력 (예: NVDA)" required>
@@ -26,10 +23,10 @@
     {% if result %}
     <article class="ai-card" style="--color: {{ result.color }};">
         <header style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0;">{{ ticker }}</h2>
+            <h2 style="margin: 0;">{{ ticker }} 결과</h2>
             <div>
                 {% if result.price == "N/A" %}
-                    <span style="color: #95a5a6;">야후 시세 로드 실패</span>
+                    <span style="color: #95a5a6;">야후 시세 로딩 지연</span>
                 {% else %}
                     <strong style="font-size: 1.5rem;">${{ result.price }}</strong>
                     <span style="color: {{ 'red' if result.change < 0 else '#2ecc71' }}">({{ result.change }}%)</span>
@@ -39,7 +36,9 @@
 
         <div style="margin: 1.5rem 0; text-align: center;">
             <label>종합 매력도: {{ result.score }}점</label>
-            <div class="score-bar"><div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div></div>
+            <div class="score-bar">
+                <div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div>
+            </div>
             <h3 style="color: {{ result.color }};">{{ result.status }}</h3>
         </div>
 
