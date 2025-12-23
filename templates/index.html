@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Quant Strategy Dashboard</title>
+    <title>AI Quant Strategy Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
         :root { --primary: #3498db; }
@@ -10,22 +10,23 @@
         .stat-card { padding: 1rem; background: #1a212c; border-radius: 8px; text-align: center; border: 1px solid #2d3748; }
         .score-bar { width: 100%; background: #2d3748; border-radius: 10px; height: 12px; margin: 15px 0; }
         .score-fill { height: 100%; border-radius: 10px; transition: width 1s ease-in-out; }
+        .ai-box { background: #2c3e50; border-left: 5px solid #3498db; padding: 1.5rem; margin-top: 1rem; border-radius: 0 8px 8px 0; }
     </style>
 </head>
 <body class="container" style="padding: 40px 0;">
-    <h1 style="text-align: center;">💰 퀀트 전문가의 족집게 분석</h1>
+    <h1 style="text-align: center;">🤖 AI 퀀트 전략 어시스턴트</h1>
     
     <form method="post" action="/analyze">
         <div style="display: flex; gap: 10px;">
-            <input type="text" name="ticker" placeholder="미국 주식 티커 입력 (예: NVDA)" required>
-            <button type="submit" class="contrast">분석 실행</button>
+            <input type="text" name="ticker" placeholder="미국 주식 티커 (예: NVDA, TSLA)" required>
+            <button type="submit" class="contrast">AI 분석 시작</button>
         </div>
     </form>
 
     {% if result %}
     <article>
         <header>
-            <h2 style="margin: 0;">{{ ticker }} <small>분석 결과</small></h2>
+            <h2 style="margin: 0;">{{ ticker }} <small>실시간 퀀트 데이터</small></h2>
         </header>
 
         <div class="grid-stats">
@@ -37,15 +38,6 @@
             <div class="stat-card">
                 <small>RSI (14일)</small>
                 <h3>{{ result.rsi }}</h3>
-                <small>
-                    {{ '과매수' if result.rsi != 'N/A' and result.rsi > 70
-                       else '과매도' if result.rsi != 'N/A' and result.rsi < 30
-                       else '보통' }}
-                </small>
-            </div>
-            <div class="stat-card">
-                <small>시가총액</small>
-                <h3>${{ result.mcap }}</h3>
             </div>
             <div class="stat-card">
                 <small>PER</small>
@@ -53,18 +45,22 @@
             </div>
         </div>
 
+        <div class="ai-box">
+            <h4 style="color: #3498db; margin-bottom: 0.5rem;">💡 전문가 문서 기반 AI 조언</h4>
+            <p style="margin: 0; line-height: 1.6;">{{ result.msg }}</p>
+        </div>
+
         <div style="margin-top: 2rem; text-align: center;">
-            <label>종합 투자 매력도: <strong>{{ result.score }}점</strong></label>
+            <label>종합 매력도: <strong>{{ result.score }}점</strong></label>
             <div class="score-bar">
                 <div class="score-fill" style="width: {{ result.score }}%; background: {{ result.color }};"></div>
             </div>
-            <h1 style="color: {{ result.color }};">{{ result.status }}</h1>
-            <p><em>"{{ result.msg if result.msg else '현 시점 퀀트 알고리즘에 따른 분석 결과입니다.' }}"</em></p>
+            <h2 style="color: {{ result.color }};">{{ result.status }}</h2>
         </div>
 
         <footer>
             <strong>기업 요약:</strong><br>
-            <small style="white-space: pre-wrap;">{{ result.summary }}</small>
+            <small>{{ result.summary }}</small>
         </footer>
     </article>
     {% endif %}
